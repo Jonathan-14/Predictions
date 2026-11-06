@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Soccer Score Predictor</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>⚽ Soccer Score Predictor</h1>
+      <p>Predict the most likely match result.</p>
+
+      <div class="api-controls">
+        <h2>🌍 Automatic Match Selection</h2>
+
+        <label for="leagueSelect">Select League</label>
+
+        <select id="leagueSelect">
+          <option value="PL">Premier League</option>
+          <option value="PD">La Liga</option>
+          <option value="BL1">Bundesliga</option>
+          <option value="SA">Serie A</option>
+          <option value="FL1">Ligue 1</option>
+          <optgroup label="European Club Competitions">
+            <option value="CL">UEFA Champions League</option>
+          </optgroup>
+          <optgroup label="International Tournaments">
+            <option value="WC">FIFA World Cup</option>
+            <option value="EC">UEFA European Championship</option>
+          </optgroup>
+        </select>
+
+        <label for="fixtureRange">How far ahead should we search?</label>
+        <select id="fixtureRange">
+          <option value="14" selected>Next 14 days</option>
+          <option value="30">Next 30 days</option>
+          <option value="60">Next 60 days</option>
+          <option value="90">Next 90 days</option>
+        </select>
+
+        <button type="button" id="loadFixturesButton" onclick="loadFixtures()">
+          Load Upcoming Matches
+        </button>
+
+        <label for="fixtureSelect">Select Match</label>
+
+        <select id="fixtureSelect">
+          <option value="">Load fixtures first</option>
+        </select>
+
+        <button type="button" id="loadStatsButton" onclick="loadSelectedTeamStats()">
+          Load Team Statistics
+        </button>
+        <button type="button" id="loadProfilesButton" class="secondary-button" onclick="loadTeamProfiles()">
+          View Team Profiles &amp; Last 10 Matches
+        </button>
+        <button type="button" id="loadHeadToHeadButton" class="secondary-button" onclick="loadHeadToHead()">
+          View Head-to-Head History
+        </button>
+        <button type="button" id="loadVenueButton" class="secondary-button" onclick="loadVenueComparison()">
+          Compare Home &amp; Away Performance
+        </button>
+
+        <p id="apiStatus">Choose a league to get started.</p>
+      </div>
+
+      <div class="teams">
+        <div class="team">
+          <h2>🏠 Home Team</h2>
+
+          <input id="homeTeam" value="Arsenal" placeholder="Team name" />
+
+          <label>Average Goals Scored</label>
+          <input
+            id="homeScored"
+            type="number"
+            value="2.0"
+            min="0"
+            max="8"
+            step="0.1"
+          />
+
+          <label>Average Goals Conceded</label>
+          <input
+            id="homeConceded"
+            type="number"
+            value="0.9"
+            min="0"
+            max="8"
+            step="0.1"
+          />
+
+          <label>Last 5 Matches (W/D/L)</label>
+          <input
+            id="homeForm"
+            value="WWDWW"
+            maxlength="5"
+            placeholder="WWDWL"
+          />
+        </div>
+
+        <div class="team">
+          <h2>✈️ Away Team</h2>
+
+          <input id="awayTeam" value="Chelsea" placeholder="Team name" />
+
+          <label>Average Goals Scored</label>
+          <input
+            id="awayScored"
+            type="number"
+            value="1.5"
+            min="0"
+            max="8"
+            step="0.1"
+          />
+
+          <label>Average Goals Conceded</label>
+          <input
+            id="awayConceded"
+            type="number"
+            value="1.3"
+            min="0"
+            max="8"
+            step="0.1"
+          />
+
+          <label>Last 5 Matches (W/D/L)</label>
+          <input
+            id="awayForm"
+            value="WDWLW"
+            maxlength="5"
+            placeholder="WWDWL"
+          />
+        </div>
+      </div>
+
+      <button type="button" id="predictButton" onclick="predictMatch()">Predict Match</button>
+
+      <details id="teamProfilesDropdown" class="analysis-dropdown">
+        <summary>📈 Team Profiles &amp; Historical Performance</summary>
+        <section id="teamProfiles" class="team-profiles" aria-live="polite">
+        <h2>📈 Team Profiles &amp; Historical Performance</h2>
+        <p>Select a fixture, then choose “View Team Profiles &amp; Last 10 Matches”.</p>
+      </section>
+      </details>
+
+      <details id="venueComparisonDropdown" class="analysis-dropdown">
+        <summary>🏟️ Home &amp; Away Performance Comparison</summary>
+        <section id="venueComparison" class="team-profiles venue-panel" aria-live="polite">
+        <h2>🏟️ Home &amp; Away Performance Comparison</h2>
+        <p>Select a fixture, then choose “Compare Home &amp; Away Performance”.</p>
+      </section>
+      </details>
+
+      <details id="headToHeadDropdown" class="analysis-dropdown">
+        <summary>🤝 Head-to-Head Analysis</summary>
+        <section id="headToHead" class="team-profiles h2h-panel" aria-live="polite">
+        <h2>🤝 Head-to-Head Analysis</h2>
+        <p>Select a fixture, then choose “View Head-to-Head History”.</p>
+      </section>
+      </details>
+
+      <div id="results">
+        <h2>Prediction Results</h2>
+        <p>Enter team statistics to get started.</p>
+      </div>
+    </div>
+
+    <section class="history-section">
+        <h2>📋 Prediction History</h2>
+    
+        <div class="history-summary">
+            <div class="history-card">
+                <span>Total Predictions</span>
+                <strong id="totalPredictions">0</strong>
+            </div>
+            <div class="history-card">
+                <span>Completed Matches</span>
+                <strong id="completedPredictions">0</strong>
+            </div>
+            <div class="history-card">
+                <span>Outcome Accuracy</span>
+                <strong id="outcomeAccuracy">—</strong>
+            </div>
+            <div class="history-card">
+                <span>Exact Score Accuracy</span>
+                <strong id="exactScoreAccuracy">—</strong>
+            </div>
+            <div class="history-card">
+                <span>Over / Under 2.5 Accuracy</span>
+                <strong id="overUnderAccuracy">—</strong>
+            </div>
+            <div class="history-card">
+                <span>BTTS Accuracy</span>
+                <strong id="bttsAccuracy">—</strong>
+            </div>
+        </div>
+
+        <div class="analytics-panel">
+            <h3>🎯 Probability Calibration</h3>
+            <p class="calibration-intro">Calibration checks whether events assigned a probability actually occur at a similar rate. Lower Brier scores are better. This is a historical diagnostic only; it does not alter future predictions.</p>
+            <div id="calibrationSummary" class="calibration-grid">
+                <p>Complete and grade matches to build calibration data.</p>
+            </div>
+            <h4>Reliability by predicted-probability range</h4>
+            <div class="history-table-wrapper">
+              <table class="history-table calibration-table">
+                <thead><tr><th>Market</th><th>Probability range</th><th>Predictions</th><th>Average predicted</th><th>Observed rate</th></tr></thead>
+                <tbody id="calibrationBins"><tr><td colspan="5">No calibration data yet.</td></tr></tbody>
+              </table>
+            </div>
+            <p class="profile-note">Guidance: fewer than 30 completed matches is a very small sample; 30–49 is still limited; 50 or more is more informative but never guarantees future accuracy. 1X2 calibration counts each of the three possible outcomes for every match.</p>
+        </div>
+
+        <div class="analytics-panel">
+            <h3>📊 Market Performance</h3>
+            <div id="marketAccuracyChart" class="market-accuracy-chart">
+                <p>Complete some matches to see your market accuracy.</p>
+            </div>
+            <h3>Competition Performance</h3>
+            <div class="history-table-wrapper">
+              <table class="history-table">
+                <thead><tr><th>Competition</th><th>Graded</th><th>Correct outcomes</th><th>Accuracy</th></tr></thead>
+                <tbody id="competitionAccuracy"><tr><td colspan="4">No completed predictions yet.</td></tr></tbody>
+              </table>
+            </div>
+        </div>
+
+        <div class="history-actions">
+            <button type="button" id="checkResultsButton" onclick="checkCompletedResults()">
+                Check Completed Match Results
+            </button>
+            <span id="resultsCheckStatus" aria-live="polite">
+                Predictions linked to fixtures can be checked after matches finish.
+            </span>
+        </div>
+
+        <div class="history-table-wrapper">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Match</th>
+                        <th>Prediction</th>
+                        <th>Actual Result</th>
+                        <th>Grade</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="predictionHistory">
+                    <tr><td colspan="6">No predictions saved yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+  </body>
+</html>
